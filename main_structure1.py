@@ -14,7 +14,7 @@ path = os.path.abspath('./data/data.xlsx')
 file = xlsxwriter.Workbook(path)
 sheet1, sheet2, sheet3 = file.add_worksheet('param'), file.add_worksheet('sitalist'), file.add_worksheet('cmat')
 
-for i in range(5):
+for i in range(3):
     print('*****************' + ' round << ' + str(i) + ' >> *******************')
     time_start = time.perf_counter()
     sitalist = cf.choose_sita(nx, ny, nz, ele_d, p)

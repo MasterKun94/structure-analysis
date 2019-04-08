@@ -66,7 +66,7 @@ import numpy as np
 
 def adjoint(tx, ty, tz, rx, ry, rz):
     """
-    坐标变换矩阵，具体内容见 《柔性设计》 P78， P110
+    坐标变换矩阵
     ------
     :param tx: x 轴方向 位移
     :param ty: y 轴方向 位移

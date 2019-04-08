@@ -58,10 +58,6 @@ class SuperBuilder:
                 f'      Kmat shape : {self.kmat.shape!r} \n'
                 )
 
-    def __repr__(self):
-        return (f'StructureBuilder - {self.method} matrix method\n'
-                f'  Structure name : {self.__class__.__name__}\n')
-
     def get_element_number(self):
         try:
             return self.element_number
@@ -91,18 +87,12 @@ class BMStructureBuilder(SuperBuilder):
         if redundant_node:
             self.xy, self.kmat = mf.redundantnode_simplify(self.xy, self.kmat, redundant_node)
 
-    def add_rigid(self, new_rigid_connect, out=False):
+    def add_rigid(self, new_rigid_connect):
         rigid_node, feature_xy = new_rigid_connect
-        if out is True:
-            return mf.rigidelement_k(self.xy, feature_xy, self.kmat, rigid_node)
-        elif out is False:
-            self.xy, self.kmat = mf.rigidelement_k(self.xy, feature_xy, self.kmat, rigid_node)
+        self.xy, self.kmat = mf.rigidelement_k(self.xy, feature_xy, self.kmat, rigid_node)
 
-    def add_redundant(self, new_redundant_node, out=False):
-        if out is True:
-            return mf.redundantnode_simplify(self.xy, self.kmat, new_redundant_node)
-        elif out is False:
-            self.xy, self.kmat = mf.redundantnode_simplify(self.xy, self.kmat, new_redundant_node)
+    def add_redundant(self, new_redundant_node):
+        self.xy, self.kmat = mf.redundantnode_simplify(self.xy, self.kmat, new_redundant_node)
 
     def add_element(self, new_ele_list):
         self.kmat = mf.build_kmat(new_ele_list, self.kmat, shape=None)
@@ -134,36 +124,23 @@ class SPStructureBuilder(SuperBuilder):
         if redundant_node:
             self.xy, self.kmat = sf.redundant(self.xy, self.kmat, redundant_node)
 
-    def add_rigid(self, new_rigid_connect, out=False, reduce_xy=False):
-        rigid_node, feature_xy = new_rigid_connect
-        if feature_xy is None:
-            feature_xy = sum(self.xy[rigid_node])[1:4] / len(rigid_node)
-        if out is True:
-            if reduce_xy is True:
-                return sf.rigid_xy(
-                    self.xy, feature_xy, rigid_node), sf.rigid(self.xy, feature_xy, self.kmat, rigid_node)
-            else:
-                return sf.rigid(self.xy, feature_xy, self.kmat, rigid_node)
-        elif out is False:
-            self.kmat = sf.rigid(self.xy, feature_xy, self.kmat, rigid_node)
-            if reduce_xy is True:
-                self.xy = sf.rigid_xy(self.xy, feature_xy, rigid_node)
+    def add_rigid(self, new_rigid_node, feature_node, reduce_xy=False):
+        # rigid_node, feature_xy = new_rigid_connect
+        if feature_node is None:
+            feature_node = sum(self.xy[new_rigid_node])[1:4] / len(new_rigid_node)
+        self.kmat = sf.rigid(self.xy, feature_node, self.kmat, new_rigid_node)
+        if reduce_xy is True:
+            self.xy = sf.rigid_xy(self.xy, feature_node, new_rigid_node)
 
-    def add_redundant(self, new_redundant_node: list, out=False):
-        if out is True:
-            return sf.redundant(self.xy, self.kmat, new_redundant_node)
-        elif out is False:
-            self.xy, self.kmat = sf.redundant(self.xy, self.kmat, new_redundant_node)
+    def add_redundant(self, new_redundant_node: list):
+        self.xy, self.kmat = sf.redundant(self.xy, self.kmat, new_redundant_node)
 
     def add_element(self, new_ele_list: "list or generator", shape=None):
-            self.kmat = sf.build_kmat(new_ele_list, self.kmat, shape=shape)
-            self.ele_list += new_ele_list
+        self.kmat = sf.build_kmat(new_ele_list, self.kmat, shape=shape)
+        self.ele_list += new_ele_list
 
-    def add_constraint(self, constraint_node: list, out=False):
-        if out is True:
-            return sf.build_constraint(self.kmat, constraint_node)
-        elif out is False:
-            self.kmat = sf.build_constraint(self.kmat, constraint_node)
+    def add_constraint(self, constraint_node: list):
+        self.kmat = sf.build_constraint(self.kmat, constraint_node)
 
     @time_counter
     def solve_deformation(self):
@@ -171,14 +148,8 @@ class SPStructureBuilder(SuperBuilder):
         return None
 
     @time_counter
-    def solve_node_cmat(self, request_node, constraint_node=None):
-        if constraint_node is None:
-            # try:
-            return sf.sp_inv(self.kmat, request_node)
-            # except:
-            #     print(self.__str__(), '未施加约束')
-        else:
-            return sf.sp_inv(self.add_constraint(constraint_node, out=True), request_node)
+    def solve_node_cmat(self, request_node):
+        return sf.sp_inv(self.kmat, request_node)
 
     def kmat_sparse(self):
         # print('using SP')
@@ -190,23 +161,24 @@ class LatStructure(SPStructureBuilder):
     @param_factory
     def __init__(self, lat_name: str, lat_param: dict, ele_name: str, ele_param: dict,
                  ele_size: float, per_plane=False, per_direction=False):
-        def _gen_ele():
-            dic = self.lattice.generater_elementdic(per_plane=per_plane, per_direction=per_direction)
-            ele_class = getattr(ehc, ele_name)
-            next(dic)
-            for param in ele_param:
-                try:
-                    yield dic.send(ele_class(**param))
-                except StopIteration:
-                    break
 
         self.lattice = getattr(lb, lat_name)(lat_param)
         self.node_number = self.lattice.node_number()
         super(LatStructure, self).__init__(ele_list=[], shape=(self.node_number * 6, self.node_number * 6))
-        self.add_element(_gen_ele())
+        self.add_element(self._gen_ele(per_plane, per_direction, ele_name, ele_param))
         self.xy = self.lattice.build_xy(ele_size)
         self.element_number = self.lattice.element_number()
         self.method = "SPARSE LATTICE"
+
+    def _gen_ele(self, per_plane, per_direction, ele_name, ele_param):
+        dic = self.lattice.generater_elementdic(per_plane=per_plane, per_direction=per_direction)
+        ele_class = getattr(ehc, ele_name)
+        next(dic)
+        for param in ele_param:
+            try:
+                yield dic.send(ele_class(**param))
+            except StopIteration:
+                break
 
 # ----------------------------------------------
 #

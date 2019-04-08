@@ -127,12 +127,12 @@ class StrbeamSQ:
         x = 1 / (2 * (1 + self.v))
         y = 12 * (1 / 3 - 0.21 * self.thc / self.wid * (1 - 1 / 12 * (self.thc / self.wid) ** 4))
         c = np.mat([
-            [self.lens / (x * y * eiy), 0, 0, 0, 0, 0],
-            [0, self.lens / eiy, 0, 0, 0, -(self.lens ** 2 / (2 * eiy))],
-            [0, 0, self.lens / eix, 0, self.lens ** 2 / (2 * eix), 0],
-            [0, 0, 0, self.lens / (self.ela * area), 0, 0],
-            [0, 0, self.lens ** 2 / (2 * eix), 0, self.lens ** 3 / (3 * eix), 0],
-            [0, -(self.lens ** 2 / (2 * eiy)), 0, 0, 0, self.lens ** 3 / (3 * eiy)]
+            [self.lens / (x * y * eiy), 0,                             0,                          0,                             0,                          0],
+            [0,                         self.lens / eiy,               0,                          0,                             0,                          -(self.lens ** 2 / (2 * eiy))],
+            [0,                         0,                             self.lens / eix,            0,                             self.lens ** 2 / (2 * eix), 0],
+            [0,                         0,                             0,                          self.lens / (self.ela * area), 0,                          0],
+            [0,                         0,                             self.lens ** 2 / (2 * eix), 0,                             self.lens ** 3 / (3 * eix), 0],
+            [0,                         -(self.lens ** 2 / (2 * eiy)), 0,                          0,                             0,                          self.lens ** 3 / (3 * eiy)]
         ])
 
         return c

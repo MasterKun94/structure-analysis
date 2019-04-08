@@ -42,7 +42,7 @@ class Structure3D(sb.LatStructure):
                     'ele_zita': np.pi / 2}
         super(Structure3D, self).__init__(
             'LatticeWith2DDiamondEle', nxyz, 'PlanarElement', eleparam, ele_d, per_plane=True)
-        self.add_rigid((self.lattice.top_node(), None))
+        self.add_rigid(self.lattice.top_node(), feature_node=None)
         self.add_constraint(self.lattice.ground_node())
 
 
