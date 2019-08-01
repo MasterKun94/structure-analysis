@@ -9,7 +9,7 @@ import structure_class as sc
 nx, ny, nz = 1, 1, 1
 thc, wid, ele_d = 1, 1, 20
 ela, v = 2000, 0.3
-p = 0.5
+p = 0.3
 path = os.path.abspath('./data/data.xlsx')
 file = xlsxwriter.Workbook(path)
 sheet1, sheet2, sheet3 = file.add_worksheet('param'), file.add_worksheet('sitalist'), file.add_worksheet('cmat')
@@ -18,6 +18,7 @@ for i in range(4):
     print('*****************' + ' round << ' + str(i) + ' >> *******************')
     time_start = time.perf_counter()
     sitalist = cf.choose_sita(nx, ny, nz, ele_d, p)
+    print(sitalist)
     # print(sitalist)
     structure1 = sc.Structure3D(nx, ny, nz, thc, wid, ela, v, ele_d, sitalist)
     cmat = structure1.solve_node_cmat(0)
